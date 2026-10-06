@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spgpy"
+dynamic = ["version"]
+description = "Secure Password Generator for Python: a secure password generator and CLI."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    {name = "Ton Cotales"},
+]
+keywords = ["password", "generator", "security", "cryptography", "cli"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Education",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Security",
+    "Topic :: Utilities",
+]
+
+dependencies = []
+
+[project.scripts]
+spgpy = "spgpy.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["spgpy*"]
+
+[tool.setuptools.package-data]
+spgpy = ["py.typed"]
+
+[tool.setuptools.dynamic]
+version = {attr = "spgpy.__version__"}
+
+[project.urls]
+Homepage = "https://github.com/toncotales/spgpy"
+Repository = "https://github.com/toncotales/spgpy"
+Issues = "https://github.com/toncotales/spgpy/issues"
+
