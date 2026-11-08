@@ -1,8 +1,8 @@
 import unittest
 from dataclasses import FrozenInstanceError
 
-from spgpy.constants import DEFAULT_EXCLUDED_SYMBOLS
-from spgpy.policy import PasswordPolicy
+from src.spgpy.constants import DEFAULT_EXCLUDED_SYMBOLS
+from src.spgpy.policy import PasswordPolicy
 
 
 class PasswordPolicyTests(unittest.TestCase):

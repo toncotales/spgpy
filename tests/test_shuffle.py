@@ -1,8 +1,8 @@
 import unittest
 from collections import Counter
 
-from spgpy.classify import get_char_type
-from spgpy.shuffle import shuffle_by_type
+from src.spgpy.classify import get_char_type
+from src.spgpy.shuffle import shuffle_by_type
 
 
 class ShuffleTests(unittest.TestCase):

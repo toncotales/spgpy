@@ -4,7 +4,7 @@ import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
 
-from spgpy.cli import main
+from src.spgpy.cli import main
 
 
 class CLITests(unittest.TestCase):

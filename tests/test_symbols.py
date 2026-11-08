@@ -1,8 +1,8 @@
 import unittest
 
-from spgpy.constants import PUNCTUATION
-from spgpy.policy import PasswordPolicy
-from spgpy.symbols import build_symbol_pool
+from src.spgpy.constants import PUNCTUATION
+from src.spgpy.policy import PasswordPolicy
+from src.spgpy.symbols import build_symbol_pool
 
 
 class SymbolPoolTests(unittest.TestCase):

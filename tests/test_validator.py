@@ -1,6 +1,6 @@
 import unittest
 
-from spgpy.validator import is_password_strong
+from src.spgpy.validator import is_password_strong
 
 
 class ValidatorTests(unittest.TestCase):

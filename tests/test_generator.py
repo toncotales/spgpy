@@ -1,11 +1,11 @@
 import unittest
 from collections import Counter
 
-from spgpy.constants import MIN_PER_TYPE
-from spgpy.generator import generate_password
-from spgpy.policy import PasswordPolicy
-from spgpy.classify import get_char_type
-from spgpy.validator import is_password_strong
+from src.spgpy.constants import MIN_PER_TYPE
+from src.spgpy.generator import generate_password
+from src.spgpy.policy import PasswordPolicy
+from src.spgpy.classify import get_char_type
+from src.spgpy.validator import is_password_strong
 
 
 class GeneratorTests(unittest.TestCase):

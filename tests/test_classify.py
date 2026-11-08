@@ -1,6 +1,6 @@
 import unittest
 
-from spgpy.classify import get_char_type
+from src.spgpy.classify import get_char_type
 
 
 class ClassifyTests(unittest.TestCase):
