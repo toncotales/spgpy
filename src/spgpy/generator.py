@@ -1,101 +1,145 @@
+"""The PasswordGenerator class, the main public API of spgpy."""
 
-import secrets
+from collections.abc import Iterable
 
-from .constants import (
-    UPPERCASE,
-    LOWERCASE,
-    DIGITS,
-    REQUIRED_TYPES,
-    MIN_PER_TYPE,
+from . import entropy
+from .arrangement import arrange_alternating
+from .constants import DEFAULT_EXCLUDED_PUNCTUATIONS, DEFAULT_LENGTH
+from .pools import build_character_pools, build_punctuation_pool
+from .sampling import sample_characters_by_type
+from .validation import (
+    is_valid_password,
+    validate_boolean,
+    validate_count,
+    validate_excluded_punctuation,
+    validate_length,
 )
-from .policy import PasswordPolicy
-from .shuffle import shuffle_by_type
-from .symbols import build_symbol_pool
 
 
-def _sample_alternating_characters(
-    pools: tuple[str, str, str, str],
-    length: int
-) -> list[str]:
-    """Sample characters ensuring counts allow strict type alternation."""
-    
-    counts = {char_type: MIN_PER_TYPE for char_type in REQUIRED_TYPES}
-    max_per_type = (length + 1) // 2
+class PasswordGenerator:
+    """Generate cryptographically secure passwords.
 
-    remaining = length - MIN_PER_TYPE * len(REQUIRED_TYPES)
-    while remaining:
-        available = [t for t in REQUIRED_TYPES if counts[t] < max_per_type]
-        if not available:
-            raise ValueError(
-                "Password length cannot satisfy alternating-type requirements."
-            )
+    Args:
+        length: Number of characters in each password.
+        no_duplicates: If True, no character appears twice in a password.
+        alternate_case: If True, no two adjacent characters share a type.
+        use_all_punctuation: If True, ignore the excluded punctuation.
+    """
 
-        weighted = [
-            t for t in available for _ in range(max_per_type - counts[t])
-        ]
-        counts[secrets.choice(weighted)] += 1
-        remaining -= 1
+    def __init__(
+        self,
+        length: int = DEFAULT_LENGTH,
+        no_duplicates: bool = False,
+        alternate_case: bool = False,
+        use_all_punctuation: bool = False,
+    ) -> None:
+        self.length = length
+        self.no_duplicates = no_duplicates
+        self.alternate_case = alternate_case
+        self.use_all_punctuation = use_all_punctuation
 
-    pool_by_type = dict(zip(REQUIRED_TYPES, pools))
-    characters: list[str] = []
-    for char_type in REQUIRED_TYPES:
-        characters.extend(
-            secrets.choice(pool_by_type[char_type])
-            for _ in range(counts[char_type])
+        self.set_excluded_punctuation(DEFAULT_EXCLUDED_PUNCTUATIONS)
+
+    @property
+    def length(self) -> int:
+        return self._length
+
+    @length.setter
+    def length(self, value: int) -> None:
+        validate_length(value)
+        self._length = value
+
+    @property
+    def no_duplicates(self) -> bool:
+        return self._no_duplicates
+
+    @no_duplicates.setter
+    def no_duplicates(self, value: bool) -> None:
+        validate_boolean("no_duplicates", value)
+        self._no_duplicates = value
+
+    @property
+    def alternate_case(self) -> bool:
+        return self._alternate_case
+
+    @alternate_case.setter
+    def alternate_case(self, value: bool) -> None:
+        validate_boolean("alternate_case", value)
+        self._alternate_case = value
+
+    @property
+    def use_all_punctuation(self) -> bool:
+        return self._use_all_punctuation
+
+    @use_all_punctuation.setter
+    def use_all_punctuation(self, value: bool) -> None:
+        validate_boolean("use_all_punctuation", value)
+        self._use_all_punctuation = value
+
+    @property
+    def excluded_punctuation(self) -> str:
+        return "".join(self._excluded_punctuation)
+
+    def set_excluded_punctuation(
+        self, punctuation_characters: Iterable[str]
+    ) -> None:
+        """Set the collection of punctuation characters to be excluded."""
+        items = validate_excluded_punctuation(punctuation_characters)
+        self._excluded_punctuation = items
+
+    def generate(self) -> str:
+        """Generate one password using the current settings.
+
+        Returns:
+            str: The generated password.
+
+        Raises:
+            ValueError: If settings make password generation impossible.
+                This can happen if:
+                - All punctuation characters have been excluded.
+                - `no_duplicates` is True and the requested `length` exceeds
+                  the total number of unique characters available.
+            RuntimeError: If the characters cannot be arranged so that no
+                two neighbours share a type (should never happen).
+        """
+        punctuation_pool = build_punctuation_pool(
+            self.use_all_punctuation, self.excluded_punctuation
         )
 
-    return characters
+        if not punctuation_pool:
+            raise ValueError("Allowed punctuation pool is empty.")
 
+        pools = build_character_pools(punctuation_pool)
 
-def _sample_characters(
-    pools: tuple[str, str, str, str],
-    length: int
-) -> list[str]:
-    """
-    Sample minimum required characters per pool, then fill remaining length.
-    """
-    
-    all_chars = "".join(pools)
-    characters = [
-        secrets.choice(pool)
-        for pool in pools
-        for _ in range(MIN_PER_TYPE)
-    ]
-    characters.extend(
-        secrets.choice(all_chars)
-        for _ in range(length - len(characters))
-    )
-    
-    return characters
-
-
-def generate_password(policy: PasswordPolicy | None = None) -> str:
-    """Generate one cryptographically secure password from policy."""
-    
-    if policy is None:
-        policy = PasswordPolicy()
-
-    if not isinstance(policy, PasswordPolicy):
-        raise TypeError("policy must be a PasswordPolicy instance.")
-
-    symbols = build_symbol_pool(policy)
-    if not symbols:
-        raise ValueError(
-            "Allowed symbol pool is empty. Cannot generate required symbols."
+        characters = sample_characters_by_type(
+            pools=pools,
+            length=self.length,
+            no_duplicates=self.no_duplicates,
+            alternate_case=self.alternate_case,
         )
 
-    pools = (UPPERCASE, LOWERCASE, DIGITS, symbols)
+        if self.alternate_case:
+            result = arrange_alternating(characters)
 
-    if policy.alternate_types:
-        characters = _sample_alternating_characters(pools, policy.length)
-        result = shuffle_by_type("".join(characters))
-        if result is None:
-            raise RuntimeError(
-                "Internal error: generated types were not alternatable."
-            )
-        return result
+            if result is None:
+                raise RuntimeError("Unable to alternate character types.")
 
-    characters = _sample_characters(pools, policy.length)
-    secrets.SystemRandom().shuffle(characters)
-    
-    return "".join(characters)
+            return result
+
+        entropy.shuffle(characters)
+
+        return "".join(characters)
+
+    def generate_many(self, count: int = 1) -> list[str]:
+        """Generate a list of secure passwords."""
+        validate_count(count)
+        return [self.generate() for _ in range(count)]
+
+    @staticmethod
+    def is_valid_password(
+        password: str,
+        alternate_case: bool = False,
+        no_duplicates: bool = False,
+    ) -> bool:
+        """Validate a password string."""
+        return is_valid_password(password, alternate_case, no_duplicates)

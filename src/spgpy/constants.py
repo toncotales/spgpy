@@ -1,36 +1,33 @@
-"""Constants used by spgpy."""
-
 import string
+from types import MappingProxyType
+from collections.abc import Mapping
 
 
-DEFAULT_LENGTH = 16
-MIN_LENGTH  = 12
-MAX_LENGTH = 128
-MAX_COUNT = 1000
+MINIMUM_PER_TYPE: int = 2
+MINIMUM_LENGTH: int = 12
+DEFAULT_LENGTH: int = 16
+MAXIMUM_LENGTH: int = 128
+MAXIMUM_GENERATION_COUNT: int = 1000
 
-DIGITS = string.digits
-PUNCTUATION = string.punctuation
-UPPERCASE = string.ascii_uppercase
-LOWERCASE = string.ascii_lowercase
+SPECIAL_CHARACTER: str = "SPECIAL_CHARACTER"
 
-REQUIRED_TYPES = ("uppercase", "lowercase", "digit", "symbol")
-MIN_PER_TYPE = 2
+CHARACTER_POOLS: Mapping[str, str] = MappingProxyType(
+    {
+        "UPPERCASE": string.ascii_uppercase,
+        "LOWERCASE": string.ascii_lowercase,
+        "PUNCTUATION": string.punctuation,
+        "DIGITS": string.digits,
+    }
+)
 
-# Symbols that commonly break shells, URLs, SQL, or config files.
-UNSAFE_SYMBOLS = frozenset([
-    "'", '"',    # quotes
-    "\\", "/",   # slashes
-    "`",         # backtick
-    "<", ">",    # angle brackets
-])
+PUNCTUATION_CLASSIFIED: Mapping[str, frozenset[str]] = MappingProxyType(
+    {
+        "common": frozenset("!@#$%&*-_?"),
+        "uncommon": frozenset("[]{}().,:;+=~^|"),
+        "unsafe": frozenset("'\"\\/`<>"),
+    }
+)
 
-# Symbols that are safe but uncommon.
-UNCOMMON_SYMBOLS = frozenset([
-    "[", "]", "{", "}", "(", ")",   # brackets and braces
-    ".", ",",                       # period and comma
-    ":", ";",                       # colon and semicolon
-    "+", "=",                       # plus and equals
-    "~", "^", "|",                  # tilde, caret, and pipe
-])
-
-DEFAULT_EXCLUDED_SYMBOLS = UNSAFE_SYMBOLS | UNCOMMON_SYMBOLS
+DEFAULT_EXCLUDED_PUNCTUATIONS: frozenset[str] = (
+    PUNCTUATION_CLASSIFIED["unsafe"] | PUNCTUATION_CLASSIFIED["uncommon"]
+)
