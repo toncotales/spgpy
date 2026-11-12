@@ -37,6 +37,7 @@ dependencies = []
 spgpy = "spgpy.cli:main"
 
 [tool.setuptools.packages.find]
+where = ["src"]
 include = ["spgpy*"]
 
 [tool.setuptools.package-data]
