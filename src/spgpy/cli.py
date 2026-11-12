@@ -5,18 +5,21 @@ import sys
 
 from . import __version__
 
-from .constants import DEFAULT_LENGTH, MAX_COUNT, MAX_LENGTH, MIN_LENGTH
-from .policy import PasswordPolicy
-from .generator import generate_password
-from .validator import is_password_strong
+from .generator import PasswordGenerator
+from .constants import (
+    DEFAULT_LENGTH,
+    MINIMUM_LENGTH,
+    MAXIMUM_LENGTH,
+    MAXIMUM_GENERATION_COUNT,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
     """Build and return the command-line argument parser."""
-    
     parser = argparse.ArgumentParser(
         prog="spgpy",
         description="Generate cryptographically secure passwords.",
+        epilog="spgpy stands for Secure Password Generator for Python."
     )
     parser.add_argument(
         "-V",
@@ -30,34 +33,37 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=DEFAULT_LENGTH,
         help=(
-            f"Password length ({MIN_LENGTH}-{MAX_LENGTH}, "
+            f"Password length ({MINIMUM_LENGTH}-{MAXIMUM_LENGTH}, "
             f"default: {DEFAULT_LENGTH})"
         )
     )
     parser.add_argument(
         "-a",
-        "--all-symbols",
+        "--use-all-punctuation",
         action="store_true",
-        help="Include all punctuation symbols without exclusion"
+        help="Include all punctuation characters without exclusion"
     )
     parser.add_argument(
         "-t",
-        "--alternate-types",
+        "--alternate-case",
         action="store_true",
         help="Never place two characters of the same type next to each other"
+    )
+    parser.add_argument(
+        "-d",
+        "--no-duplicates",
+        action="store_true",
+        help="No duplicate characters"
     )
     parser.add_argument(
         "-n",
         "--count",
         type=int,
         default=1,
-        help=f"Number of passwords to generate (1-{MAX_COUNT}, default: 1)"
-    )
-    parser.add_argument(
-        "-v",
-        "--validate",
-        type=str,
-        help="Check if a specific password meets strength requirements"
+        help=(
+            f"Number of passwords to generate "
+            f"(1-{MAXIMUM_GENERATION_COUNT}, default: 1)"
+        )
     )
 
     return parser
@@ -68,30 +74,22 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
-    if args.validate is not None:
-        if is_password_strong(
-            args.validate,
-            alternate_types=args.alternate_types
-        ):
-            print("[PASSED] Strength check successful.")
-            return
-        
-        print("[FAILED] Strength check failed.")
-        raise SystemExit(1)
-
-    if not 1 <= args.count <= MAX_COUNT:
-        parser.error(f"--count must be between 1 and {MAX_COUNT}")
+    if not 1 <= args.count <= MAXIMUM_GENERATION_COUNT:
+        parser.error(
+            f"--count must be between 1 and {MAXIMUM_GENERATION_COUNT}"
+        )
 
     try:
-        policy = PasswordPolicy(
+        generator = PasswordGenerator(
             length=args.length,
-            all_symbols=args.all_symbols,
-            alternate_types=args.alternate_types
+            no_duplicates=args.no_duplicates,
+            alternate_case=args.alternate_case,
+            use_all_punctuation=args.use_all_punctuation
         )
 
         for _ in range(args.count):
-            print(generate_password(policy))
+            print(generator.generate())
 
-    except (TypeError, ValueError) as err:
-        print(f"Error: {err}", file=sys.stderr)
-        raise SystemExit(1) from err
+    except (TypeError, ValueError) as error:
+        print(f"Error: {error}", file=sys.stderr)
+        raise SystemExit(1) from error
